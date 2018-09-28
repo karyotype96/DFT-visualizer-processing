@@ -102,7 +102,7 @@ void draw_freqs(float[][] frequencies){
   translate(0, -height/2);
   if (freq_mult != 0){
     for (int i = 0; i < spectrum; i++){
-      h = ((pow(frequencies[i][REAL], 2) + pow(frequencies[i][IMAG], 2)) / 700) * freq_mult;
+      h = ((pow(frequencies[i][REAL], 2) + pow(frequencies[i][IMAG], 2)) / height) * freq_mult;
       if (i >= 97 && i <= 103) h *= unwanted_freqs_mult;
       rect(i * interval, 0, interval, h);
     }
@@ -111,7 +111,7 @@ void draw_freqs(float[][] frequencies){
 }
 
 void setup(){
-  size(1400, 800);
+  fullScreen();
   C_signal =        new float[width];
   G_signal =        new float[width];
   hC_signal =       new float[width];
