@@ -1,3 +1,16 @@
+//some useful constants
+final int REAL = 0;
+final int IMAG = 1;
+
+// frequency stuff
+final int C_freq  = 262;
+final int G_freq  = 392;
+final int hC_freq = 523;
+final int u_freq  = 999;
+
+//oscillators that match with the frequencies
+SinOsc C_osc, G_osc, hC_osc, u_osc;
+
 //now here's the meat and potatoes of the whole thing.
 //the DFT is used to decompose a waveform into its
 //individual frequencies, and it does that by transforming
@@ -6,7 +19,7 @@
 //note that there's both a real and imaginary component. both
 //components contain all the frequencies found.
 float[][] fourier_transform(float[] signal){
-  float[][] transformed = new float[1000][2];
+  float[][] transformed = new float[spectrum][2];
   
   for (int k = 0; k < transformed.length; k++){
     transformed[k][REAL] = 0;
@@ -29,7 +42,7 @@ float[] inv_fourier_transform(float[][] frequencies, int size){
     for (int k = 0; k < frequencies.length; k++){
       retransformed[n] += frequencies[k][REAL] * cos(TWO_PI * k * n / retransformed.length) - frequencies[k][IMAG] * sin(TWO_PI * k * n / retransformed.length);
     }
-    retransformed[n] /= retransformed.length;
+    retransformed[n] /= retransformed.length/2;
   }
   return retransformed;
 }
