@@ -47,17 +47,19 @@ int transformed_left, transformed_right;
 void draw_graph(){
   stroke(255);
   strokeWeight(1);
-  for (float i = graph_left; i <= graph_right; i += graph_xinterval){
-    line(i, graph_top, i, graph_top + (graph_bottom - graph_top) * graph_mult);
-  }
+  if (graph_mult != 0){
+    for (float i = graph_left; i <= graph_right; i += graph_xinterval){
+      line(i, graph_top, i, graph_top + (graph_bottom - graph_top) * graph_mult);
+    }
   
-  for (float i = graph_top; i <= graph_bottom; i += graph_yinterval){
-    line(graph_left, i, graph_left + (graph_right - graph_left) * graph_mult, i);
-  }
+    for (float i = graph_top; i <= graph_bottom; i += graph_yinterval){
+      line(graph_left, i, graph_left + (graph_right - graph_left) * graph_mult, i);
+    }
   
-  stroke(0, 0, 255);
-  strokeWeight(3);
-  line(graph_left, 0, graph_left + (graph_right - graph_left) * graph_mult, 0);
+    stroke(0, 0, 255);
+    strokeWeight(3);
+    line(graph_left, 0, graph_left + (graph_right - graph_left) * graph_mult, 0);
+  }
 }
 
 void draw_functions(){
@@ -103,7 +105,7 @@ void draw_freqs(float[][] frequencies){
   if (freq_mult != 0){
     for (int i = 0; i < spectrum; i++){
       h = ((pow(frequencies[i][REAL], 2) + pow(frequencies[i][IMAG], 2)) / height) * freq_mult;
-      if (i >= 97 && i <= 103) h *= unwanted_freqs_mult;
+      if (i >= 96 && i <= 103) h = lerp(1, h, unwanted_freqs_mult);
       rect(i * interval, 0, interval, h);
     }
   }
@@ -250,12 +252,13 @@ void mousePressed(){
       current_state++;
       break;
     case DRAW_FOURIER:
-      Ani.to(this, 1.5, "unwanted_freqs_mult", 0.0001, Ani.QUAD_IN_OUT);
+      Ani.to(this, 1.5, "unwanted_freqs_mult", 0, Ani.QUAD_IN_OUT);
       current_state++;
       break;
     case REMOVE_FREQ:
-      Ani.to(this, 1.5, "untransformed_right", width, Ani.LINEAR);
+      Ani.to(this, 1.5, "untransformed_right", width, Ani.QUAD_IN_OUT);
       Ani.to(this, 1.5, "freq_mult", 0, Ani.QUAD_IN_OUT);
+      Ani.to(this, 1.5, "graph_mult", 1, Ani.QUAD_IN_OUT);
       current_state++;
       break;
     case INV_FOURIER:
