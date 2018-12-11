@@ -15,12 +15,14 @@ final int STOP_COMPS     = 9; //stop all component sounds
 final int DRAW_UNWANTED  = 10; //draw unwanted graph
 final int PLAY_UNWANTED  = 11; //play it
 final int STOP_UNWANTED  = 12; //stop playing it because it's annoying
-final int DRAW_FOURIER   = 13; //show the fourier transform
-final int REMOVE_FREQ    = 14; //show the wanted fourier transform
-final int INV_FOURIER    = 15; //show the results of the inverse
-final int REDRAW_WANTED  = 16;
-final int PLAY_WANTED_2  = 17;
-final int STOP_WANTED_2  = 18;
+final int DRAW_WRAPPED   = 13; //draw the function wrapped around the origin
+final int DRAW_K_AMOUNTS = 14; //visualize quantities
+final int DRAW_FOURIER   = 15; //show the fourier transform
+final int REMOVE_FREQ    = 16; //show the wanted fourier transform
+final int INV_FOURIER    = 17; //show the results of the inverse
+final int REDRAW_WANTED  = 18;
+final int PLAY_WANTED_2  = 19;
+final int STOP_WANTED_2  = 20;
 
 int current_state;
 
@@ -35,14 +37,17 @@ int spectrum = 1000;
 int components_left, components_right;
 int wanted_left, wanted_right;
 int unwanted_left, unwanted_right;
+float k;
 
 float[] C_signal, G_signal, hC_signal, u_signal, wanted_signal, unwanted_signal, fourier_untransformed;
-float[][] fourier_transformed_w, fourier_transformed_u;
+float[][] fourier_transformed_w, fourier_transformed_u, fourier_transformed_uw;
+float[][] untransformed;
 
 int untransformed_left, untransformed_right;
 float freq_mult = 0;
 float unwanted_freqs_mult;
 int transformed_left, transformed_right;
+float wrapped_mult;
 
 void draw_graph(){
   stroke(255);
@@ -94,6 +99,40 @@ void draw_functions(){
   }
 }
 
+void draw_wrappedgraph(float[] numbers, float k){
+  pushMatrix();
+  float interval = 100;
+  float x1, y1;
+  float x2, y2;
+  translate(width/2, height/2);
+  
+  stroke(127);
+  if (wrapped_mult != 0){
+    for (int i = 0; i < width/2; i += interval){
+      line(i, lerp(0, -height/2, wrapped_mult), i, lerp(0, height/2, wrapped_mult));
+      line(-i, lerp(0, -height/2, wrapped_mult), -i, lerp(0, height/2, wrapped_mult));
+    }
+    for (int i = 0; i < height/2; i += interval){
+      line(lerp(0, width/2, wrapped_mult), i, lerp(0, -width/2, wrapped_mult), i);
+      line(lerp(0, width/2, wrapped_mult), -i, lerp(0, -width/2, wrapped_mult), -i);
+    }
+    
+    stroke(0, 0, 255);
+    line(0, lerp(0, -height/2, wrapped_mult), 0, lerp(0, height/2, wrapped_mult));
+    line(lerp(0, width/2, wrapped_mult), 0, lerp(0, -width/2, wrapped_mult), 0);
+  }
+  stroke(255, 0, 0);
+  for (int i = 0; i < lerp(0, numbers.length, wrapped_mult)-1; i++){
+    x1 = numbers[i] * cos(TWO_PI * k * (i) / numbers.length) * interval;
+    y1 = numbers[i] * -sin(TWO_PI * k * (i) / numbers.length) * interval;
+    x2 = numbers[i+1] * cos(TWO_PI * k * (i+1) / numbers.length) * interval;
+    y2 = numbers[i+1] * -sin(TWO_PI * k * (i+1) / numbers.length) * interval;
+    line(x1, y1, x2, y2);
+  }
+  
+  popMatrix();
+}
+
 void draw_freqs(float[][] frequencies){
   float interval = 10;
   float h;
@@ -101,11 +140,17 @@ void draw_freqs(float[][] frequencies){
   stroke(255, 0, 0);
   strokeWeight(1);
   pushMatrix();
-  translate(0, -height/2);
+  translate(0, height/5);
   if (freq_mult != 0){
     for (int i = 0; i < spectrum; i++){
-      h = ((pow(frequencies[i][REAL], 2) + pow(frequencies[i][IMAG], 2)) / height) * freq_mult;
-      if (i >= 96 && i <= 103) h = lerp(1, h, unwanted_freqs_mult);
+      h = ((frequencies[i][REAL] / 2) + 1) * freq_mult;
+      if (i >= 96 && i <= 110) h = lerp(1, h, unwanted_freqs_mult);
+      rect(i * interval, 0, interval, h);
+    }
+    translate(0, -height/2.5);
+    for (int i = 0; i < spectrum; i++){
+      h = ((frequencies[i][IMAG] / 2) + 1) * freq_mult;
+      if (i >= 96 && i <= 110) h = lerp(1, h, unwanted_freqs_mult);
       rect(i * interval, 0, interval, h);
     }
   }
@@ -130,6 +175,7 @@ void setup(){
   graph_right = width;
   graph_mult = 0;
   unwanted_freqs_mult = 1;
+  k = 1;
   
   components_left = 0;
   components_right = 0;
@@ -139,6 +185,7 @@ void setup(){
   unwanted_right = 0;
   untransformed_left = 0;
   untransformed_right = 0;
+  wrapped_mult = 0;
   transformed_left = 0;
   transformed_right = spectrum;
   
@@ -152,7 +199,19 @@ void setup(){
   }
   fourier_transformed_w = fourier_transform(wanted_signal);
   fourier_transformed_u = fourier_transform(unwanted_signal);
-  fourier_untransformed = inv_fourier_transform(fourier_transformed_w, width);
+  
+  fourier_transformed_uw = new float[spectrum][2];
+  for (int i = 0; i < fourier_transformed_uw.length; i++){
+    fourier_transformed_uw[i][REAL] = fourier_transformed_u[i][REAL];
+    fourier_transformed_uw[i][IMAG] = fourier_transformed_u[i][IMAG];
+  }
+  
+  for (int i = 96; i < 111; i++){
+    fourier_transformed_uw[i][REAL] = 2;
+    fourier_transformed_uw[i][IMAG] = 2;
+  }
+  
+  fourier_untransformed = inv_fourier_transform(fourier_transformed_uw, width);
   
   C_osc = new SinOsc(this);
   C_osc.freq(C_freq);
@@ -179,6 +238,8 @@ void draw(){
   draw_freqs(fourier_transformed_u);
   draw_functions();
   popMatrix();
+  draw_wrappedgraph(unwanted_signal, k);
+  
 }
 
 void mousePressed(){
@@ -248,7 +309,21 @@ void mousePressed(){
     case STOP_UNWANTED:
       Ani.to(this, 1.5, "graph_mult", 0, Ani.QUAD_IN_OUT);
       Ani.to(this, 1.5, "unwanted_left", width, Ani.QUAD_IN_OUT);
-      Ani.to(this, 1.5, "freq_mult", 1, Ani.QUAD_IN_OUT);
+      Ani.to(this, 1.5, "wrapped_mult", 1, Ani.QUAD_IN_OUT);
+      current_state++;
+      break;
+    case DRAW_WRAPPED:
+      Ani freq2 = new Ani(this, 1.5, 3, "k", 5, Ani.QUAD_IN_OUT);
+      Ani freq3 = new Ani(this, 1.5, 6, "k", 10, Ani.QUAD_IN_OUT);
+      Ani.to(this, 1.5, "k", 3, Ani.QUAD_IN_OUT);
+      freq2.start();
+      freq3.start();
+      current_state++;
+      break;
+    case DRAW_K_AMOUNTS:
+      Ani n = new Ani(this, 1.5, 1.5, "freq_mult", 1, Ani.QUAD_IN_OUT);
+      Ani.to(this, 1.5, "wrapped_mult", 0, Ani.QUAD_IN_OUT);
+      n.start();
       current_state++;
       break;
     case DRAW_FOURIER:
